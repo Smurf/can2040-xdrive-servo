@@ -1,0 +1,13 @@
+build
+!.vscode/*
+CMakeFiles/*
+generated/*
+pico-sdk/*
+CMakeCache.txt
+
+*.bin
+*.dis
+*.elf
+*.elf.map
+*.hex
+*.uf2
