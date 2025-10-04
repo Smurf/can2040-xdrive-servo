@@ -11,3 +11,7 @@ CMakeCache.txt
 *.elf.map
 *.hex
 *.uf2
+*.in
+*Doxygen*
+Makefile
+compile_commands.json

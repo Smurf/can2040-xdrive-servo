@@ -1,3 +1,6 @@
 [submodule "can2040"]
 	path = can2040
 	url = https://github.com/KevinOConnor/can2040.git
+[submodule "pico-oled-driver"]
+	path = pico-oled-driver
+	url = git@github.com:Smurf/RPi-Pico-OLED-DRIVER.git
