@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 file(GLOB SOURCE_FILES "src/*.c")
-add_executable(can2040-xdrive-servo ${SOURCE_FILES} can2040/src/can2040.c )
+add_executable(can2040-xdrive-servo ${SOURCE_FILES} can2040/src/can2040.c pico-oled-driver/picoOled.c )
 
 pico_set_program_name(can2040-xdrive-servo "can2040-xdrive-servo")
 pico_set_program_version(can2040-xdrive-servo "0.1")
@@ -54,8 +54,8 @@ target_link_libraries(can2040-xdrive-servo
 target_include_directories(can2040-xdrive-servo PRIVATE
         ${CMAKE_CURRENT_LIST_DIR} 
         ${CMAKE_CURRENT_LIST_DIR}/src
-        ${CMAKE_CURRENT_LIST_DIR}/can2040/src)
-        #${CMAKE_CURRENT_LIST_DIR}/pico-oled-driver)
+        ${CMAKE_CURRENT_LIST_DIR}/can2040/src        
+        ${CMAKE_CURRENT_LIST_DIR}/pico-oled-driver)
 
 # Add any user requested libraries
 target_link_libraries(can2040-xdrive-servo 

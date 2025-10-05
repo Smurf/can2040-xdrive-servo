@@ -11,6 +11,7 @@
 #include "can2040/src/can2040.h"
 #include "pico-oled-driver/picoOled.h"
 #include "canbus.h"
+#include "oled.h"
 #include "xdrive_canbus.h"
 
 // Define the ADC channels for the joystick axes
@@ -69,10 +70,9 @@ main(void)
 {
     stdio_init_all();
     sleep_ms(3000);  // Give time for USB serial to connect
-    
+    initOled(&g_sh1106_oled, true);
     printf("\n=== ODrive CAN Control Test ===\n");
-    
-    canbus_setup();
+        canbus_setup();
     adc_init();
     adc_gpio_init(JOYSTICK_X_PIN);
     adc_gpio_init(JOYSTICK_Y_PIN);
@@ -151,7 +151,10 @@ main(void)
     
     // Main loop
     for (;;) {
-        // Handle incoming CAN messages
+    char msg[] = "\n=== XDrive CAN Control Test===\n";
+    oledWriteStr(&g_sh1106_oled, (const uint8_t *)msg, strlen(msg));
+    //oledDisplay(&g_sh1106_oled);
+    // Handle incoming CAN messages
         while (MessageQueue.push_pos != MessageQueue.pull_pos) {
             struct can2040_msg *qmsg = &MessageQueue.queue[MessageQueue.pull_pos % QUEUE_SIZE];
             struct can2040_msg msg = *qmsg;
