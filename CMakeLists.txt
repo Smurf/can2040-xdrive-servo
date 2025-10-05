@@ -34,8 +34,8 @@ project(can2040-xdrive-servo C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-
-add_executable(can2040-xdrive-servo can2040-xdrive-servo.c can2040/src/can2040.c )
+file(GLOB SOURCE_FILES "src/*.c")
+add_executable(can2040-xdrive-servo ${SOURCE_FILES} can2040/src/can2040.c pico-oled-driver/picoOled.c )
 
 pico_set_program_name(can2040-xdrive-servo "can2040-xdrive-servo")
 pico_set_program_version(can2040-xdrive-servo "0.1")
@@ -46,12 +46,16 @@ pico_enable_stdio_usb(can2040-xdrive-servo 1)
 
 # Add the standard library to the build
 target_link_libraries(can2040-xdrive-servo
-        pico_stdlib hardware_adc)
+        pico_stdlib 
+        hardware_adc
+        hardware_i2c)
 
 # Add the standard include files to the build
 target_include_directories(can2040-xdrive-servo PRIVATE
         ${CMAKE_CURRENT_LIST_DIR} 
-        ${CMAKE_CURRENT_LIST_DIR}/can2040/src)
+        ${CMAKE_CURRENT_LIST_DIR}/src
+        ${CMAKE_CURRENT_LIST_DIR}/can2040/src        
+        ${CMAKE_CURRENT_LIST_DIR}/pico-oled-driver)
 
 # Add any user requested libraries
 target_link_libraries(can2040-xdrive-servo 
