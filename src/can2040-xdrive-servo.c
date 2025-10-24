@@ -23,6 +23,43 @@
 #define JOYSTICK_X_PIN 26
 #define JOYSTICK_Y_PIN 27
 
+// Define the GPIO pins for the encoder's CLK and DT signals
+#define ENCODER_CLK_PIN 2
+#define ENCODER_DT_PIN 3
+#define ENCODER_DEBOUNCE 10000 //10ms debounce
+
+volatile int encoder_position = 0;
+volatile uint8_t encoder_state = 0;
+volatile uint8_t last_callback_time = 0;
+
+void encoder_callback(uint gpio, uint32_t events) {
+    uint32_t now = time_us_32();
+    if (now - last_callback_time < ENCODER_DEBOUNCE){
+        return;
+    }
+    last_callback_time = now;
+    int current_clk_state = gpio_get(ENCODER_CLK_PIN);
+    int current_dt_state = gpio_get(ENCODER_DT_PIN);
+
+    uint8_t new_state = (current_clk_state << 1) | current_dt_state;
+    // State transition table for quadrature decoding
+    // This implements a proper state machine that filters invalid transitions
+    int8_t state_table[4][4] = {
+        { 0, -1,  1,  0},  // 00 -> 00, 01, 10, 11
+        { 1,  0,  0, -1},  // 01 -> 00, 01, 10, 11
+        {-1,  0,  0,  1},  // 10 -> 00, 01, 10, 11
+        { 0,  1, -1,  0}   // 11 -> 00, 01, 10, 11
+    };
+    
+    int new_pos = encoder_position + state_table[encoder_state][new_state];
+    if( new_pos < 0){
+        encoder_position = 0;
+    }else{
+        encoder_position += state_table[encoder_state][new_state];
+    }
+    encoder_state = new_state;
+}
+
 // Set ODrive axis state
 bool set_axis_state(uint8_t node_id, uint32_t axis_state)
 {
@@ -70,9 +107,26 @@ main(void)
 {
     stdio_init_all();
     sleep_ms(3000);  // Give time for USB serial to connect
-    initOled(&g_sh1106_oled, true);
     printf("\n=== ODrive CAN Control Test ===\n");
-        canbus_setup();
+    
+    initOled(&g_sh1106_oled, true);
+
+    // Initialize GPIO pins
+    gpio_init(ENCODER_CLK_PIN);
+    gpio_set_dir(ENCODER_CLK_PIN, GPIO_IN);
+    gpio_pull_up(ENCODER_CLK_PIN); // Enable internal pull-up resistor
+
+    gpio_init(ENCODER_DT_PIN);
+    gpio_set_dir(ENCODER_DT_PIN, GPIO_IN);
+    gpio_pull_up(ENCODER_DT_PIN); // Enable internal pull-up resistor
+
+    // Get initial CLK state
+    //last_clk_state = gpio_get(ENCODER_CLK_PIN);
+
+    // Set up interrupt for the CLK pin
+    gpio_set_irq_enabled_with_callback(ENCODER_CLK_PIN, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, &encoder_callback);
+    gpio_set_irq_enabled(ENCODER_DT_PIN, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true);
+    canbus_setup();
     adc_init();
     adc_gpio_init(JOYSTICK_X_PIN);
     adc_gpio_init(JOYSTICK_Y_PIN);
@@ -151,7 +205,8 @@ main(void)
     
     // Main loop
     for (;;) {
-    char msg[] = "\n=== XDrive CAN Control Test===\n";
+    char msg[20];
+    sprintf(msg, "%d\n", encoder_position);
     oledWriteStr(&g_sh1106_oled, (const uint8_t *)msg, strlen(msg));
     //oledDisplay(&g_sh1106_oled);
     // Handle incoming CAN messages
@@ -211,7 +266,7 @@ main(void)
         uint16_t x_pos = adc_read();
 
         // Convert joystick X position to velocity (-5 to +5 for safety)
-        float clamped_vel = (((float)x_pos - 2047.5f) / 2047.5f) * 5.0f;
+        float clamped_vel = (((float)x_pos - 2047.5f) / 2047.5f) * (float)encoder_position;
         
         // Apply deadband
         if (fabs(clamped_vel) < 0.2f) {
@@ -235,7 +290,7 @@ main(void)
             last_heartbeat = current_time;
         }
         
-        sleep_ms(10);
+        //sleep_ms(10);
     }
 
     return 0;
